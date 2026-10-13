@@ -17,9 +17,7 @@ class Settings:
         "DATABASE_URL",
         "postgresql+psycopg://postgres:postgres@localhost:5432/Krissaco",
     )
-    if DATABASE_URL.startswith("postgres://"):
-        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
-    elif DATABASE_URL.startswith("postgresql://"):
+    if DATABASE_URL.startswith("postgresql://"):
         DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
     # Security & Authentication
