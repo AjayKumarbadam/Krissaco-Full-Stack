@@ -13,12 +13,43 @@ class Settings:
     API_V1_STR: str = "/api"
 
     # Database
-    DATABASE_URL: str = os.getenv(
+    _raw_db_url: str = os.getenv(
         "DATABASE_URL",
-        "postgresql+psycopg://postgres:postgres@localhost:5432/Krissaco",
+        "postgresql://postgres:postgres@localhost:5432/Krissaco",
     )
-    if DATABASE_URL.startswith("postgresql://"):
-        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
+    if _raw_db_url.startswith("postgres://"):
+        _raw_db_url = _raw_db_url.replace("postgres://", "postgresql://", 1)
+
+    # Detect installed PostgreSQL driver (psycopg 3 vs psycopg2)
+    _has_psycopg3 = False
+    try:
+        import psycopg  # noqa: F401
+        _has_psycopg3 = True
+    except ImportError:
+        pass
+
+    _has_psycopg2 = False
+    try:
+        import psycopg2  # noqa: F401
+        _has_psycopg2 = True
+    except ImportError:
+        pass
+
+    if _has_psycopg3:
+        _driver = "postgresql+psycopg://"
+    elif _has_psycopg2:
+        _driver = "postgresql+psycopg2://"
+    else:
+        _driver = "postgresql://"
+
+    if _raw_db_url.startswith("postgresql+psycopg://") and not _has_psycopg3 and _has_psycopg2:
+        DATABASE_URL: str = _raw_db_url.replace("postgresql+psycopg://", "postgresql+psycopg2://", 1)
+    elif _raw_db_url.startswith("postgresql://") and not (
+        _raw_db_url.startswith("postgresql+psycopg://") or _raw_db_url.startswith("postgresql+psycopg2://")
+    ):
+        DATABASE_URL: str = _raw_db_url.replace("postgresql://", _driver, 1)
+    else:
+        DATABASE_URL: str = _raw_db_url
 
     # Security & Authentication
     SECRET_KEY: str = os.getenv("SECRET_KEY", "krissaco-jwt-production-secret-key-2026")
