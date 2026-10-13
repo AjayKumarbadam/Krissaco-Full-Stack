@@ -36,6 +36,30 @@ app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads"
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    from app.core.database import SessionLocal
+    from app.core.security import get_password_hash
+    from app.common.models.user import User
+
+    db = SessionLocal()
+    try:
+        default_users = [
+            ("accountant@krissaco.com", "accountant123", "Alice Accountant", "Accountant"),
+            ("manager@krissaco.com", "manager123", "Bob Manager", "Manager"),
+            ("auditor@krissaco.com", "auditor123", "Carol Auditor", "Auditor"),
+        ]
+        for username, plain_pwd, full_name, role in default_users:
+            if not db.query(User).filter(User.username == username).first():
+                db.add(
+                    User(
+                        username=username,
+                        password_hash=get_password_hash(plain_pwd),
+                        full_name=full_name,
+                        role=role,
+                    )
+                )
+        db.commit()
+    finally:
+        db.close()
 
 
 @app.get("/health", tags=["Health"])
