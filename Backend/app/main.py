@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import settings
 from app.core.database import Base, engine
@@ -21,13 +23,32 @@ app = FastAPI(
     description="Krissaco Enterprise Financial Transaction & Audit Management Platform",
 )
 
+
+# Catch-all exception middleware to ensure 500 errors retain CORS headers
+class ErrorHandlingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        try:
+            return await call_next(request)
+        except Exception as exc:
+            import logging
+            logging.getLogger("uvicorn.error").error("Unhandled exception: %s", exc, exc_info=True)
+            return JSONResponse(
+                status_code=500,
+                content={"detail": f"Internal Server Error: {str(exc)}"},
+            )
+
+
+app.add_middleware(ErrorHandlingMiddleware)
+
+# Add CORSMiddleware as the outermost middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=settings.ALLOWED_ORIGINS if "*" not in settings.ALLOWED_ORIGINS else ["*"],
+    allow_origin_regex=settings.ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["Content-Disposition"],
+    expose_headers=["Content-Disposition", "*"],
 )
 
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")

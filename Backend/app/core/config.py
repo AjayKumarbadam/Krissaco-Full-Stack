@@ -57,14 +57,28 @@ class Settings:
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
 
     # CORS
-    ALLOWED_ORIGINS: list[str] = [
-        origin.strip()
-        for origin in os.getenv(
-            "ALLOWED_ORIGINS",
-            "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174",
-        ).split(",")
-        if origin.strip()
-    ]
+    _raw_allowed: str = os.getenv("ALLOWED_ORIGINS", "").strip()
+    if _raw_allowed:
+        ALLOWED_ORIGINS: list[str] = [
+            origin.strip()
+            for origin in _raw_allowed.split(",")
+            if origin.strip()
+        ]
+    else:
+        ALLOWED_ORIGINS: list[str] = [
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:3000",
+            "http://localhost:4173",
+            "http://localhost:8080",
+            "http://127.0.0.1:5173",
+            "http://127.0.0.1:5174",
+            "http://127.0.0.1:3000",
+            "http://127.0.0.1:4173",
+            "http://127.0.0.1:8080",
+        ]
+
+    ALLOW_ORIGIN_REGEX: str | None = os.getenv("ALLOW_ORIGIN_REGEX", r"^https?://.*$")
 
     # File Storage
     UPLOAD_DIR: Path = BASE_DIR / "static" / "uploads"
